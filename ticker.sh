@@ -5,7 +5,7 @@ LANG=C
 LC_NUMERIC=C
 
 SYMBOLS=("$@")
-THRESH=0.5
+THRESH=8
 
 if ! $(type jq > /dev/null 2>&1); then
   echo "'jq' is not in the PATH. (See: https://stedolan.github.io/jq/)"
@@ -20,7 +20,6 @@ fi
 
 message_slack()
 {
-
 }
 
 FIELDS=(symbol marketState regularMarketPrice regularMarketChange regularMarketChangePercent \
@@ -87,10 +86,11 @@ for symbol in $(IFS=' '; echo "${SYMBOLS[*]}"); do
   fi
 
   printf "%-10s$COLOR_BOLD%8.2f$COLOR_RESET" $symbol $price
+  # echo "--" $(echo "$price - $diff" | bc) "--"
   printf "$color%10.2f%12s$COLOR_RESET" $diff $(printf "(%.2f%%)" $percent)
   if [ $(bc <<< "${percent/-/} > $THRESH") -eq 1 ]
   then
-      message_slack "Movement of $symbol gth $THRESH%" server-alerts
+      message_slack "Movement of $symbol gth $THRESH%, it is $percent%" execution-system > /dev/null
   fi
   printf " %s\n" "$nonRegularMarketSign"
 done
