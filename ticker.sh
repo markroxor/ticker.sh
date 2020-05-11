@@ -5,6 +5,7 @@ LANG=C
 LC_NUMERIC=C
 
 SYMBOLS=("$@")
+THRESH=0.5
 
 if ! $(type jq > /dev/null 2>&1); then
   echo "'jq' is not in the PATH. (See: https://stedolan.github.io/jq/)"
@@ -15,6 +16,12 @@ if [ -z "$SYMBOLS" ]; then
   echo "Usage: ./ticker.sh AAPL MSFT GOOG BTC-USD"
   exit
 fi
+
+
+message_slack()
+{
+
+}
 
 FIELDS=(symbol marketState regularMarketPrice regularMarketChange regularMarketChangePercent \
   preMarketPrice preMarketChange preMarketChangePercent postMarketPrice postMarketChange postMarketChangePercent)
@@ -81,5 +88,9 @@ for symbol in $(IFS=' '; echo "${SYMBOLS[*]}"); do
 
   printf "%-10s$COLOR_BOLD%8.2f$COLOR_RESET" $symbol $price
   printf "$color%10.2f%12s$COLOR_RESET" $diff $(printf "(%.2f%%)" $percent)
+  if [ $(bc <<< "${percent/-/} > $THRESH") -eq 1 ]
+  then
+      message_slack "Movement of $symbol gth $THRESH%" server-alerts
+  fi
   printf " %s\n" "$nonRegularMarketSign"
 done
