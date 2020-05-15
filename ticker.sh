@@ -5,7 +5,8 @@ LANG=C
 LC_NUMERIC=C
 
 SYMBOLS=("$@")
-THRESH=8
+THRESH=2
+msg_send_thresh=60
 
 if ! $(type jq > /dev/null 2>&1); then
   echo "'jq' is not in the PATH. (See: https://stedolan.github.io/jq/)"
@@ -85,12 +86,25 @@ for symbol in $(IFS=' '; echo "${SYMBOLS[*]}"); do
     color=$COLOR_GREEN
   fi
 
-  printf "%-10s$COLOR_BOLD%8.2f$COLOR_RESET" $symbol $price
+  printf "%-10s$COLOR_BOLD%8.2f$COLOR_RESET" $symbol $price 
   # echo "--" $(echo "$price - $diff" | bc) "--"
   printf "$color%10.2f%12s$COLOR_RESET" $diff $(printf "(%.2f%%)" $percent)
   if [ $(bc <<< "${percent/-/} > $THRESH") -eq 1 ]
   then
-      message_slack "Movement of $symbol gth $THRESH%, it is $percent%" execution-system > /dev/null
+        last_msg_epoch=$(cat cache.txt | jq '."'"$symbol"'"')
+        last_msg_epoch=${last_msg_epoch//\"/}
+        cur_epoch=$(date +%s)
+
+        dt=$(date +%H)
+        if [[ $(($cur_epoch - $last_msg_epoch)) -gt $msg_send_thresh ]] && [[ $(dt/#0/) -lt 10 ]]
+        then
+            echo "sending message $symbol $cur_epoch $last_msg_epoch"
+            message_slack "Movement of $symbol gth $THRESH%, it is $percent% $cur_epoch $last_msg_epoch" server-alerts > /dev/null
+            jq  '."'"$symbol"'" = "'"$cur_epoch"'"' cache.txt >| temp && mv temp cache.txt
+        fi
   fi
   printf " %s\n" "$nonRegularMarketSign"
 done
+
+# echo '{"BANKBARODA.NS":0, "CANBK.NS":0, "HDFCBANK.NS":0, "KOTAKBANK.NS":0, "PNB.NS":0, "SBIN.NS":0}' >| cache.txt
+
