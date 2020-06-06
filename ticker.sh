@@ -97,8 +97,7 @@ for symbol in $(IFS=' '; echo "${SYMBOLS[*]}"); do
 
         dt=$(date +%H)
         currenttime=$(date +%H:%M)
-        if [[ $(($cur_epoch - $last_msg_epoch)) -gt $msg_send_thresh ]] && [[ $(dt/#0/) -lt 10 ]] && [[ "$currenttime" > "09:15" ]] && [[ "$currenttime" < "15:30" ]]
-
+        if [[ $(($cur_epoch - $last_msg_epoch)) -gt $msg_send_thresh ]] && [[ $(dt/#0/) -lt 10 ]] && [[ "$currenttime" > "09:15" ]] && [[ "$currenttime" < "15:30" ]] && [[ $(date +%u) -lt 6 ]]
         then
             echo "sending message $symbol $cur_epoch $last_msg_epoch"
             message_slack "Movement of $symbol gth $THRESH%, it is $percent% $cur_epoch $last_msg_epoch" execution-system > /dev/null
